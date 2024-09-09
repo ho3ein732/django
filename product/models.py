@@ -1,7 +1,8 @@
 from django.db import models
 from shop.models import Shop
-from django.contrib.auth.models import User
+from user.models import User
 from django.utils.text import slugify
+
 
 # Create your models here.
 
@@ -11,6 +12,7 @@ class Brands(models.Model):
     slug = models.SlugField(max_length=200, null=True, blank=True)
     description = models.CharField(max_length=200)
     logo = models.ImageField(upload_to='gallery/logos')
+    web_link = models.URLField(blank=True, null=True)
 
     def __str__(self):
         return self.name
@@ -22,9 +24,14 @@ class Brands(models.Model):
 
 
 class Category(models.Model):
+    parent = models.ForeignKey('self', null=True, blank=True, related_name='categories', on_delete=models.CASCADE)
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True, null=True)
+    image = models.ImageField(upload_to='gallery/categories')
+    is_active = models.BooleanField(default=True)
     slug = models.SlugField(max_length=200, blank=True, null=True)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
@@ -67,27 +74,28 @@ class Product(models.Model):
 
 class ProductFeature(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='features')
-    feature_name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=200, blank=True, null=True)
+    feature = models.ForeignKey('CategoryFeature', on_delete=models.CASCADE, related_name='features')
     feature_value = models.CharField(max_length=200)
 
+    is_active = models.BooleanField(default=True)
+
     def __str__(self):
-        return f'{self.feature_name} : {self.feature_value} for {self.product.name}'
+        return f'{self.feature} : {self.feature_value} for {self.product.name}'
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.feature_name)
+            self.slug = slugify(self.feature)
 
 
 class CategoryFeature(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='features')
     slug = models.SlugField(max_length=200, blank=True, null=True)
     feature_name = models.CharField(max_length=200)
-    feature_value = models.CharField(max_length=200)
 
     def __str__(self):
-        return f'{self.feature_name} : {self.feature_value} for {self.category.name}'
-    
+        return f'{self.feature_name} for {self.category.name}'
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.feature_name)
@@ -99,6 +107,7 @@ class ProductComment(models.Model):
     text = models.TextField()
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments')
     created = models.DateTimeField(auto_now_add=True)
+    is_confirmed = models.BooleanField(default=False)
 
     def __str__(self):
         return f'comment by {self.user} on {self.product}'

@@ -1,8 +1,15 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractUser
 
 
 # Create your models here.
+
+
+class User(AbstractUser):
+    date_of_birth = models.DateTimeField(blank=True, null=True)
+    bio = models.TextField(blank=True, null=True)
+    phone = models.IntegerField(null=True, blank=True)
+    Photo = models.ImageField(upload_to='gallery/user-photo', blank=True, null=True)
 
 
 class UserAddress(models.Model):
