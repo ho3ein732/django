@@ -49,10 +49,11 @@ class Product(models.Model):
     off = models.DecimalField(default=0, max_digits=200, decimal_places=2)
     product_stock = models.IntegerField(default=1)
     slug = models.SlugField(max_length=200, blank=True, null=True)
+    quantity = models.IntegerField(default=1)
 
-    brands = models.ForeignKey(Brands, on_delete=models.SET_NULL, null=True, related_name='products')
-    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, related_name='products')
-    shop = models.ForeignKey(Shop, on_delete=models.CASCADE, related_name='products')
+    brands = models.ForeignKey(Brands, on_delete=models.SET_NULL, null=True, related_name='brands')
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, related_name='category')
+    shop = models.ForeignKey(Shop, on_delete=models.CASCADE, related_name='shop')
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -151,7 +152,6 @@ class Size(models.Model):
 
 class Stock(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='stock')
-    quantity = models.ImageField(default=0)
     color = models.ForeignKey(Color, on_delete=models.CASCADE)
     size = models.ForeignKey(Size, on_delete=models.CASCADE)
 

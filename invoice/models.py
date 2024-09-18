@@ -1,17 +1,19 @@
 from django.db import models
 from user.models import User
 from product.models import Stock
+
+
 # Create your models here.
 
 
 class Status(models.Model):
     choices = (
-        ('تایید سفارش', 'تایید سفارش'),
-        ('در انتظار پرداخت', 'در انتظار پرداخت'),
-        ('رد شده', 'رد شده')
+        ('Order Confirmed', 'Order Confirmed'),
+        ('Pending Payment', 'Pending Payment'),
+        ('Rejected', 'Rejected')
     )
 
-    name = models.CharField(max_length=30, choices=choices)
+    name = models.CharField(max_length=30, choices=choices, )
 
     def __str__(self):
         return self.name
@@ -34,20 +36,23 @@ class GatewayPayment(models.Model):
     created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.name + self.amount
+        return self.name
 
 
 class Invoice(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='invoice')
-    copen = models.OneToOneField(Copen, on_delete=models.CASCADE, related_name='invoice') # برای اینکه به هر فاکتور
+    copen = models.OneToOneField(Copen, on_delete=models.CASCADE, related_name='invoice', blank=True,
+                                 null=True)  # برای اینکه به هر فاکتور
     # بتوانند یک کوپن تخفیف بزنند
     status = models.OneToOneField(Status, on_delete=models.CASCADE, related_name='invoice')
-    total_price =    models.DecimalField(decimal_places=2, max_digits=10)
+    # total_price = models.DecimalField(decimal_places=2, max_digits=10)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return f"invoice id  {self.id} - {self.user.username}"
+    @property
+    def total_price(self):
+        items = self.items.all()
+        return sum(i.total_price for i in items)
 
 
 class PaymentType(models.Model):
@@ -61,7 +66,15 @@ class PaymentType(models.Model):
 class InvoiceItem(models.Model):
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='items')
     stock = models.ForeignKey(Stock, on_delete=models.CASCADE, related_name='items')
-    quantity = models.IntegerField(default=0)
+    quantity = models.IntegerField(default=1)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.invoice.save()
+
+    @property
+    def total_price(self):
+        return self.stock.product.price * self.quantity
 
 
 class InvoiceLog(models.Model):
